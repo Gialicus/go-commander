@@ -1,0 +1,89 @@
+version: "3"
+services:
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    ports:
+    - 29092:29092
+    environment:
+    - KAFKA_BROKER_ID=1
+    - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+    - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+    - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+    - KAFKA_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+    - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    depends_on:
+    - zookeeper
+  kafka_ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui
+    ports:
+    - 8080:8080
+    environment:
+    - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper:2181
+    - KAFKA_CLUSTERS_0_NAME=local
+    - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+    - kafka
+  mongodb:
+    restart: always
+    image: mongo
+    container_name: mongodb
+    volumes:
+    - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    - ./mongo-volume:/data/database
+    ports:
+    - 27017-27019:27017-27019
+  neo4j:
+    restart: unless-stopped
+    image: neo4j
+    container_name: neo4j
+    volumes:
+    - ./conf:/conf
+    - ./data:/data
+    - ./import:/import
+    - ./logs:/logs
+    - ./plugins:/plugins
+    ports:
+    - 7474:7474
+    - 7687:7687
+    environment:
+    - NEO4J_dbms_memory_pagecache_size=1G
+    - NEO4J_dbms.memory.heap.initial_size=1G
+    - NEO4J_dbms_memory_heap_max__size=1G
+  postgres:
+    restart: always
+    image: postgres:latest
+    container_name: postgres
+    volumes:
+    - /var/lib/postgresql/data
+    ports:
+    - 5432:5432
+    environment:
+    - POSTGRES_USER=postgres
+    - POSTGRES_PASSWORD=postgres
+  rabbitmq:
+    restart: always
+    image: rabbitmq
+    ports:
+    - 5672:5672
+    - 15672:15672
+    environment:
+    - RABBITMQ_DEFAULT_USER=guest
+    - RABBITMQ_DEFAULT_PASS=guest
+  redis:
+    restart: unless-stopped
+    image: redis
+    container_name: redis
+    ports:
+    - 6379:6379
+    expose:
+    - "6379"
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    ports:
+    - 22181:2181
+    environment:
+    - ZOOKEEPER_CLIENT_PORT=2181
+    - ZOOKEEPER_TICK_TIME=2000
