@@ -31,7 +31,7 @@ func init() {
 	rootCmd.AddCommand(geneticCmd)
 
 	// Here you will define your flags and configuration settings.
-	geneticCmd.Flags().BoolP("nosql", "n", false, "add db to docker-compose")
+	geneticCmd.Flags().BoolP("all", "a", false, "add all")
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// geneticCmd.PersistentFlags().String("foo", "", "A help for foo")
@@ -41,13 +41,42 @@ func init() {
 	// geneticCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 func genetic(cmd *cobra.Command, args []string) {
-	_, err := cmd.Flags().GetBool("nosql")
+	all, err := cmd.Flags().GetBool("all")
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	service_map := make(map[string]interfaces.DockerService)
+	if all {
+		addAll(service_map)
+	} else {
+		addByQuestion(service_map)
+	}
 
+	docker_compose := interfaces.DockerCompose{
+		Version:  "3",
+		Services: service_map,
+	}
+
+	yamlData, _ := yaml.Marshal(&docker_compose)
+	util.CreateFile("docker-compose.yml", string(yamlData))
+
+	if util.SelectYN("Vuoi lanciare i container?") {
+		execDockerCompose()
+	}
+
+}
+func addAll(service_map map[string]interfaces.DockerService) {
+	service_map["mongodb"] = buildMongoDB()
+	service_map["postgres"] = buildPostgres()
+	service_map["neo4j"] = buildNeo4j()
+	service_map["redis"] = buildRedis()
+	service_map["rabbitmq"] = buildRabbitMQ()
+	service_map["zookeeper"] = buildZookeeper()
+	service_map["kafka"] = buildKafka()
+	service_map["kafka_ui"] = buildKafkaUI()
+}
+func addByQuestion(service_map map[string]interfaces.DockerService) {
 	if util.SelectYN("Vuoi aggiungere mongodb?") {
 		service_map["mongodb"] = buildMongoDB()
 	}
@@ -63,24 +92,11 @@ func genetic(cmd *cobra.Command, args []string) {
 	if util.SelectYN("Vuoi aggiungere rabbitmq?") {
 		service_map["rabbitmq"] = buildRabbitMQ()
 	}
-	if util.SelectYN("Vuoi aggiungere kafka,zookeeper e kafka_ui?") {
+	if util.SelectYN("Vuoi aggiungere kafka, zookeeper e kafka_ui?") {
 		service_map["zookeeper"] = buildZookeeper()
 		service_map["kafka"] = buildKafka()
 		service_map["kafka_ui"] = buildKafkaUI()
 	}
-
-	docker_compose := interfaces.DockerCompose{
-		Version:  "3",
-		Services: service_map,
-	}
-
-	yamlData, _ := yaml.Marshal(&docker_compose)
-	util.CreateFile("docker-compose.yml", string(yamlData))
-
-	if util.SelectYN("Vuoi lanciare i container?") {
-		execDockerCompose()
-	}
-
 }
 func buildMongoDB() interfaces.DockerService {
 	return interfaces.DockerService{
