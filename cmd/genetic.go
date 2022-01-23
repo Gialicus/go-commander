@@ -23,7 +23,7 @@ var geneticCmd = &cobra.Command{
 	Long:  `Generatore di docker-compose tramite cli`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("genetic called")
-		handler(cmd, args)
+		genetic(cmd, args)
 	},
 }
 
@@ -40,7 +40,7 @@ func init() {
 	// is called directly, e.g.:
 	// geneticCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
-func handler(cmd *cobra.Command, args []string) {
+func genetic(cmd *cobra.Command, args []string) {
 	_, err := cmd.Flags().GetBool("nosql")
 	if err != nil {
 		fmt.Println(err)
